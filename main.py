@@ -1,15 +1,12 @@
-import csv
 import os
-from os import path
-import sys
 import re
 from elasticsearch import Elasticsearch, helpers, exceptions
 
 client = Elasticsearch(os.getenv("ELASTICSEARCH_URL"))
-# errNumber, positiveMatches, negativeMatches = 0, 0, 0
+
 positive = re.compile(r'[\W](?:proced(?:ente|ência|eu|er))|(inadmissibilidade|inadmit(?:o|indo) (?:liminarmente)(?:d\w|o) recurso)',
                       re.IGNORECASE)
-# r'd(?:ar|ou|ando)(?:-lhes?)? provimento'
+
 inverse = re.compile(r'neg(?:ar|o|ando)(?:-lhes?)? provimento', re.IGNORECASE)
 
 ignore = re.compile(r'[dn]a lide'
@@ -48,9 +45,6 @@ def read(sent):
             result["positive"] = True
         if (not (result["positive"] or result["negative"])) and ignore.search(sent):
             result["ignored"] = True
-        if (result["positive"] != result["negative"]) and inverse.search(sent):
-            result["negative"] = not result["negative"]
-            result["positive"] = not result["positive"]
         if not (result["positive"] or result["negative"] or result["ignored"]):
             result["undefined"] = True
     return result
@@ -64,13 +58,6 @@ def tag(item):
 
 
 def main():
-    # query = {
-    #     "size": 1000,
-    #     "query": {
-    #         "match_all": {}
-    #     }
-    # }
-
     resp = helpers.scan(client, size=2000, index="data")
 
     for i, doc in enumerate(resp):
@@ -85,20 +72,3 @@ def main():
 
 
 helpers.bulk(client, main(), stats_only=True, chunk_size=2000)
-
-#
-# readName = sys.argv[1]
-# outdir = path.dirname(readName)
-# positiveName = path.join(outdir, "positive.csv")
-# negativeName = path.join(outdir, "negative.csv")
-# reader = csv.reader(open(readName, newline=''), delimiter=',', quotechar='"')
-# # reader = open(readName, 'r')
-# errorWriter = open(path.join(outdir, "error.txt"), 'w+')
-# positiveWriter = open(path.join(outdir, "positive.txt"), 'w+')
-# negativeWriter = open(path.join(outdir, "negative.txt"), 'w+')
-#
-# for line in reader:
-#     run(line)
-#     # read(line)
-#
-# print(errNumber, positiveMatches, negativeMatches)
